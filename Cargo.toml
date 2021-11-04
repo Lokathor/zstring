@@ -1,0 +1,13 @@
+[package]
+name = "zstring"
+version = "0.1.0-alpha.0"
+edition = "2021"
+repository = "https://github.com/Lokathor/zstring"
+license = "Zlib OR Apache-2.0 OR MIT"
+description = "Zero-termianted string lib, for use with C FFI."
+
+[dependencies]
+
+[features]
+default = ["alloc"]
+alloc = []
