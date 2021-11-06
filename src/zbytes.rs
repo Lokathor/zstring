@@ -17,6 +17,7 @@ use crate::{ZBytesCreationError, ZBytesRef, ZBytesRefIter};
 /// in this allocation can't be changed, including that bytes within the
 /// sequence cannot be set to 0.
 #[repr(transparent)]
+#[cfg_attr(docs_rs, doc(cfg(feature = "alloc")))]
 pub struct ZBytes {
   pub(crate) nn: NonNull<u8>,
 }

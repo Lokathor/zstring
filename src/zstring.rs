@@ -10,6 +10,7 @@ use crate::{CharDecoder, ZBytesCreationError, ZBytesRefIter, ZStr};
 ///
 /// Because this is a "thin" pointer it's suitable for direct use with FFI.
 #[repr(transparent)]
+#[cfg_attr(docs_rs, doc(cfg(feature = "alloc")))]
 pub struct ZString {
   pub(crate) nn: NonNull<u8>,
 }

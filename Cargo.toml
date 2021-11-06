@@ -11,3 +11,7 @@ description = "Zero-termianted string lib, for use with C FFI."
 [features]
 default = []
 alloc = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg","docs_rs"]

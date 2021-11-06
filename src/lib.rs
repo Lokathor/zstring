@@ -1,5 +1,6 @@
 #![no_std]
 #![warn(missing_docs)]
+#![cfg_attr(docs_rs, feature(doc_cfg))]
 
 //! A crate to make zero-termiated FFI data easier to work with.
 //!
@@ -9,10 +10,7 @@
 //! C function such as the following from the Windows API:
 //!
 //! ```c
-//! FARPROC GetProcAddress(
-//!   HMODULE hModule,
-//!   LPCSTR  lpProcName
-//! );
+//! FARPROC GetProcAddress(HMODULE hModule, LPCSTR  lpProcName);
 //! ```
 //!
 //! We can expose this in Rust like this
