@@ -59,7 +59,7 @@
 //! ```
 //!
 //! Normally it would very troublesome to get the data for `ppEnabledLayerNames`
-//! and `ppEnabledExtensionNames` arranged. However, if we use a Vec<ZString>
+//! and `ppEnabledExtensionNames` arranged. However, if we use a `Vec<ZString>`
 //! then the pointer to the vec's data will naturally line up with what we need.
 
 #[cfg(feature = "alloc")]
