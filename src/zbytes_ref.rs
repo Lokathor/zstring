@@ -17,9 +17,9 @@ impl_zbytes_fmt!(
 );
 impl<'a> core::fmt::Pointer for ZBytesRef<'a> {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    write!(f, "ZBytesRef(")?;
+    f.write_str("ZBytesRef(")?;
     core::fmt::Pointer::fmt(&self.nn.as_ptr(), f)?;
-    write!(f, ")")?;
+    f.write_str(")")?;
     Ok(())
   }
 }
@@ -33,7 +33,7 @@ impl<'a> TryFrom<&'a [u8]> for ZBytesRef<'a> {
       Some((terminator, data)) => {
         if terminator != &0 {
           Err(ZBytesCreationError::NullTerminatorMissing)
-        } else if data.iter().any(|b| b == &0) {
+        } else if data.iter().any(|u| u == &0) {
           Err(ZBytesCreationError::InteriorNull)
         } else {
           Ok(Self {
@@ -43,14 +43,6 @@ impl<'a> TryFrom<&'a [u8]> for ZBytesRef<'a> {
         }
       }
     }
-  }
-}
-impl<'a> TryFrom<&'a str> for ZBytesRef<'a> {
-  type Error = ZBytesCreationError;
-
-  #[inline]
-  fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-    Self::try_from(value.as_bytes())
   }
 }
 impl<'a, const N: usize> TryFrom<&'a [u8; N]> for ZBytesRef<'a> {
@@ -101,8 +93,8 @@ impl<'a> ZBytesRef<'a> {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct ZBytesRefIter<'a> {
-  nn: NonNull<u8>,
-  marker: PhantomData<&'a [u8]>,
+  pub(crate) nn: NonNull<u8>,
+  pub(crate) marker: PhantomData<&'a [u8]>,
 }
 impl<'a> Iterator for ZBytesRefIter<'a> {
   type Item = &'a u8;
