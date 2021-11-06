@@ -9,5 +9,5 @@ description = "Zero-termianted string lib, for use with C FFI."
 [dependencies]
 
 [features]
-default = ["alloc"]
+default = []
 alloc = []
