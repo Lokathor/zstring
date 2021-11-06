@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 #![warn(missing_docs)]
 
 //! A crate to make zero-termiated FFI data easier to work with.
@@ -36,5 +36,5 @@ pub enum ZBytesCreationError {
 mod zbytes_ref;
 pub use zbytes_ref::*;
 
-mod zbytes_mut;
-pub use zbytes_mut::*;
+mod zbytes;
+pub use zbytes::*;

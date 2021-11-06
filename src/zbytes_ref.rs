@@ -17,7 +17,10 @@ impl_zbytes_fmt!(
 );
 impl<'a> core::fmt::Pointer for ZBytesRef<'a> {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    write!(f, "ZBytesRef({:p})", self.nn.as_ptr())
+    write!(f, "ZBytesRef(")?;
+    core::fmt::Pointer::fmt(&self.nn.as_ptr(), f)?;
+    write!(f, ")")?;
+    Ok(())
   }
 }
 impl<'a> TryFrom<&'a [u8]> for ZBytesRef<'a> {
@@ -71,15 +74,17 @@ impl<'a> ZBytesRef<'a> {
   }
 
   /// Gets an iterator over the bytes.
+  ///
+  /// The iterator does **not** return the final null byte.
   #[inline]
   #[must_use]
   pub const fn iter(&self) -> ZBytesRefIter<'a> {
     ZBytesRefIter { nn: self.nn, marker: PhantomData }
   }
 
-  /// Gets the full slice this points to, including the null byte.
+  /// Gets the full slice this points to, **including the null byte.**
   ///
-  /// **Caution:** This takes linear time to compute the slice!
+  /// **Caution:** This takes linear time to compute the slice length!
   #[must_use]
   pub fn as_slice_including_null(&self) -> &'a [u8] {
     let mut count = 1;
@@ -112,13 +117,4 @@ impl<'a> Iterator for ZBytesRefIter<'a> {
       }
     }
   }
-}
-
-#[test]
-fn zbytes_basics() {
-  let _ = ZBytesRef::try_from("hello\0").unwrap();
-  let _ = ZBytesRef::try_from(b"hello\0").unwrap();
-  let _ = ZBytesRef::try_from(b"hello\0".as_ref()).unwrap();
-
-  assert_eq!(format!("{}", ZBytesRef::try_from(" A\0").unwrap()), "[32, 65]");
 }
