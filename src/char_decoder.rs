@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 /// Decodes byte sequences that are assumed to be utf-8.
 pub struct CharDecoder<I: Iterator<Item = u8>> {
   iter: core::iter::Peekable<I>,
@@ -30,7 +32,7 @@ impl<I: Iterator<Item = u8>> Iterator for CharDecoder<I> {
     if x < 128 {
       //println!("1 byte");
       //println!("x = 0b{:08b}", x);
-      return Some(unsafe { char::from_u32_unchecked(x as u32) });
+      return Some(x as u8 as char);
     } else
     /* otherwise it's a very nasty code path */
     if (x >> 5) == 0b110 {
