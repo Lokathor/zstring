@@ -7,11 +7,30 @@ use crate::{CharDecoder, ZBytesRef, ZBytesRefIter};
 /// Like with a `str`, the bytes **must** be utf-8 encoded.
 ///
 /// Because this is a "thin" pointer it's suitable for direct use with FFI.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct ZStr<'a> {
   pub(crate) nn: NonNull<u8>,
   pub(crate) marker: PhantomData<&'a [u8]>,
+}
+impl<'a, 'b> PartialEq<ZStr<'b>> for ZStr<'a> {
+  fn eq(&self, other: &ZStr<'b>) -> bool {
+    self.nn == other.nn
+      || self
+        .iter_bytes()
+        .copied()
+        .zip(other.iter_bytes().copied())
+        .all(|(z, s)| z == s)
+  }
+}
+impl<'a> PartialEq<str> for ZStr<'a> {
+  fn eq(&self, other: &str) -> bool {
+    self
+      .iter_bytes()
+      .copied()
+      .zip(other.as_bytes().iter().copied())
+      .all(|(z, s)| z == s)
+  }
 }
 impl<'a> core::fmt::Debug for ZStr<'a> {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {

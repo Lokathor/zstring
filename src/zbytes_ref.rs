@@ -6,11 +6,22 @@ use core::{marker::PhantomData, ptr::NonNull, slice};
 /// The bytes have no enforced encoding.
 ///
 /// Because this is a "thin" pointer it's suitable for direct use with FFI.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct ZBytesRef<'a> {
   pub(crate) nn: NonNull<u8>,
   pub(crate) marker: PhantomData<&'a [u8]>,
+}
+impl<'a, 'b> PartialEq<ZBytesRef<'b>> for ZBytesRef<'a> {
+  fn eq(&self, other: &ZBytesRef<'b>) -> bool {
+    self.nn == other.nn
+      || self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
+  }
+}
+impl<'a> PartialEq<[u8]> for ZBytesRef<'a> {
+  fn eq(&self, other: &[u8]) -> bool {
+    self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
+  }
 }
 impl_zbytes_fmt!(
   ZBytesRef<'a>: Binary, Debug, Display, LowerExp, LowerHex, Octal, UpperExp, UpperHex
