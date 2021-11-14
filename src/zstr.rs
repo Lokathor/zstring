@@ -14,23 +14,25 @@ pub struct ZStr<'a> {
   pub(crate) marker: PhantomData<&'a [u8]>,
 }
 impl<'a, 'b> PartialEq<ZStr<'b>> for ZStr<'a> {
+  #[inline]
+  #[must_use]
   fn eq(&self, other: &ZStr<'b>) -> bool {
-    self.nn == other.nn
-      || self
-        .iter_bytes()
-        .copied()
-        .zip(other.iter_bytes().copied())
-        .all(|(z, s)| z == s)
+    self.as_zbytes_ref() == other.as_zbytes_ref()
   }
 }
 impl<'a> Eq for ZStr<'a> {}
-impl<'a> PartialEq<str> for ZStr<'a> {
-  fn eq(&self, other: &str) -> bool {
-    self
-      .iter_bytes()
-      .copied()
-      .zip(other.as_bytes().iter().copied())
-      .all(|(z, s)| z == s)
+impl<'a> PartialEq<&str> for ZStr<'a> {
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &&str) -> bool {
+    self.as_zbytes_ref() == other.as_bytes()
+  }
+}
+impl<'a> PartialEq<ZStr<'a>> for &str {
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZStr<'a>) -> bool {
+    other.as_zbytes_ref() == self.as_bytes()
   }
 }
 impl<'a> core::fmt::Debug for ZStr<'a> {

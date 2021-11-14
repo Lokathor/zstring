@@ -13,15 +13,53 @@ pub struct ZBytesRef<'a> {
   pub(crate) marker: PhantomData<&'a [u8]>,
 }
 impl<'a, 'b> PartialEq<ZBytesRef<'b>> for ZBytesRef<'a> {
+  #[inline]
+  #[must_use]
   fn eq(&self, other: &ZBytesRef<'b>) -> bool {
-    self.nn == other.nn
-      || self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
+    if self.nn == other.nn {
+      return true;
+    } else {
+      let mut self_it = self.iter().copied();
+      let mut other_it = other.iter().copied();
+      loop {
+        match (self_it.next(), other_it.next()) {
+          (Some(s), Some(o)) => {
+            if s != o {
+              return false;
+            }
+          }
+          (None, None) => return true,
+          _ => return false,
+        }
+      }
+    }
   }
 }
 impl<'a> Eq for ZBytesRef<'a> {}
-impl<'a> PartialEq<[u8]> for ZBytesRef<'a> {
-  fn eq(&self, other: &[u8]) -> bool {
-    self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
+impl<'a> PartialEq<&[u8]> for ZBytesRef<'a> {
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &&[u8]) -> bool {
+    let mut self_it = self.iter().copied();
+    let mut other_it = other.iter().copied();
+    loop {
+      match (self_it.next(), other_it.next()) {
+        (Some(s), Some(o)) => {
+          if s != o {
+            return false;
+          }
+        }
+        (None, None) => return true,
+        _ => return false,
+      }
+    }
+  }
+}
+impl<'a> PartialEq<ZBytesRef<'a>> for &[u8] {
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZBytesRef<'a>) -> bool {
+    other == self
   }
 }
 impl_zbytes_fmt!(

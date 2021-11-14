@@ -10,9 +10,17 @@ fn test_zbytesref() {
 
 #[test]
 fn test_zstr() {
+  // macro
   const ABC: ZStr<'static> = zstr!("abc");
 
+  // formatting
   assert_eq!(format!("{}", ABC), "abc");
+
+  // equal
+  assert_eq!("hello", zstr!("hello"));
+  assert_eq!(zstr!("hello"), "hello");
+  // NOT equal
+  assert_ne!(zstr!("hello"), "hello there");
 }
 
 #[test]
