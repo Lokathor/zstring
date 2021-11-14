@@ -23,6 +23,7 @@ impl<'a, 'b> PartialEq<ZStr<'b>> for ZStr<'a> {
         .all(|(z, s)| z == s)
   }
 }
+impl<'a> Eq for ZStr<'a> {}
 impl<'a> PartialEq<str> for ZStr<'a> {
   fn eq(&self, other: &str) -> bool {
     self

@@ -18,6 +18,7 @@ impl<'a, 'b> PartialEq<ZBytesRef<'b>> for ZBytesRef<'a> {
       || self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
   }
 }
+impl<'a> Eq for ZBytesRef<'a> {}
 impl<'a> PartialEq<[u8]> for ZBytesRef<'a> {
   fn eq(&self, other: &[u8]) -> bool {
     self.iter().copied().zip(other.iter().copied()).all(|(z, s)| z == s)
