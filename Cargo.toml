@@ -1,6 +1,6 @@
 [package]
 name = "zstring"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 repository = "https://github.com/Lokathor/zstring"
 license = "Zlib OR Apache-2.0 OR MIT"
