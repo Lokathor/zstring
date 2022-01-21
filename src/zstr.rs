@@ -2,7 +2,7 @@ use core::{iter::Copied, marker::PhantomData, ptr::NonNull};
 
 use crate::{CharDecoder, ZBytesRef, ZBytesRefIter};
 
-/// Borrows a non-null **const** pointer to zero-termianted bytes.
+/// Borrows a non-null **const** pointer to zero-terminated bytes.
 ///
 /// Like with a `str`, the bytes **must** be utf-8 encoded.
 ///

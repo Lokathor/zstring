@@ -4,7 +4,7 @@ use alloc::{boxed::Box, string::String};
 
 use crate::{CharDecoder, ZBytesCreationError, ZBytesRefIter, ZStr};
 
-/// Owns a non-null pointer to zero-termianted bytes.
+/// Owns a non-null pointer to zero-terminated bytes.
 ///
 /// Like with a `String`, the bytes **must** be utf-8 encoded.
 ///
