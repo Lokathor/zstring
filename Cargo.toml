@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2021"
 repository = "https://github.com/Lokathor/zstring"
 license = "Zlib OR Apache-2.0 OR MIT"
-description = "Zero-termianted string lib, for use with C FFI."
+description = "Zero-terminated string lib, for use with C FFI."
 
 [dependencies]
 

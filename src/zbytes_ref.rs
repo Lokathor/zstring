@@ -1,7 +1,7 @@
 use super::ZBytesCreationError;
 use core::{marker::PhantomData, ptr::NonNull, slice};
 
-/// Borrows a non-null **const** pointer to zero-termianted bytes.
+/// Borrows a non-null **const** pointer to zero-terminated bytes.
 ///
 /// The bytes have no enforced encoding.
 ///

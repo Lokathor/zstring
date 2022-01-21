@@ -7,7 +7,7 @@ use alloc::boxed::Box;
 
 use crate::{ZBytesCreationError, ZBytesRef, ZBytesRefIter};
 
-/// Owns a non-null pointer to some zero-termianted bytes.
+/// Owns a non-null pointer to some zero-terminated bytes.
 ///
 /// The bytes have no enforced encoding.
 ///
