@@ -88,13 +88,13 @@ impl ZString {
   ///
   /// * This iterator *excludes* the terminating 0 byte.
   #[inline]
-  pub fn bytes(&self) -> impl Iterator<Item = u8> + '_ {
+  pub fn bytes<'a>(&'a self) -> impl Iterator<Item = u8> + 'a {
     self.as_zstr().bytes()
   }
 
   /// An iterator over the decoded `char` values of this `ZStr`.
   #[inline]
-  pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
+  pub fn chars<'a>(&'a self) -> impl Iterator<Item = char> + 'a {
     self.as_zstr().chars()
   }
 }

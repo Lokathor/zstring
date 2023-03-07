@@ -19,6 +19,9 @@ pub use char_decoder::*;
 mod zstr;
 pub use zstr::*;
 
+mod array_zstring;
+pub use array_zstring::*;
+
 #[cfg(feature = "alloc")]
 mod _zstring;
 #[cfg(feature = "alloc")]
