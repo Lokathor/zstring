@@ -14,6 +14,7 @@ use crate::{ZStr, ZStringError};
 ///   values followed by at least one zero byte.
 /// * The `ZString` owns the data, and will free it on drop.
 #[repr(transparent)]
+#[cfg_attr(docs_rs, doc(cfg(feature = "alloc")))]
 pub struct ZString {
   pub(crate) nn: NonNull<u8>,
 }
