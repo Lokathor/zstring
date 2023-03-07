@@ -1,0 +1,27 @@
+[package]
+name = "zstring-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.zstring]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "from_utf8_lossy"
+path = "fuzz_targets/from_utf8_lossy.rs"
+test = false
+doc = false
