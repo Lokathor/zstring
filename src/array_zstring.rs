@@ -85,9 +85,9 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   /// "Some" is an actual [`ZStringError`] and "None" indicates that there was
   /// no zstring related issue, just a lack of capacity.
   ///
+  /// * Any number of trailing nulls are allowed, and will be trimmed.
   /// * Interior nulls are not allowed (err:
   ///   `Some(ZStringError::InteriorNulls)`).
-  /// * Any number of trailing nulls are allowed, and will be trimmed.
   /// * The trimmed byte length must be less than or equal to `N-1` (err:
   ///   `None`).
   ///
@@ -96,6 +96,10 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   /// let interior_null_err: Option<ZStringError> =
   ///   ArrayZString::<16>::try_from("hel\0lo").unwrap_err();
   /// assert_eq!(interior_null_err, Some(ZStringError::InteriorNulls));
+  ///
+  /// let capacity_err: Option<ZStringError> =
+  ///   ArrayZString::<2>::try_from("hello").unwrap_err();
+  /// assert_eq!(capacity_err, None);
   /// ```
   #[inline]
   fn try_from(value: &str) -> Result<Self, Self::Error> {
