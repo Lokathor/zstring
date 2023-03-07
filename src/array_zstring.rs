@@ -46,7 +46,7 @@ impl<const N: usize> ArrayZString<N> {
   /// * This iterator *excludes* the terminating 0 byte.
   #[inline]
   pub fn bytes(&self) -> impl Iterator<Item = u8> + '_ {
-    self.0.iter().copied()
+    self.0.iter().copied().take_while(|&b| b != 0)
   }
 
   /// An iterator over the decoded `char` values of this `ZStr`.
