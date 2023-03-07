@@ -1,15 +1,16 @@
 [package]
 name = "zstring"
-version = "0.1.2"
-edition = "2021"
-repository = "https://github.com/Lokathor/zstring"
-license = "Zlib OR Apache-2.0 OR MIT"
 description = "Zero-termianted string lib, for use with C FFI."
+repository = "https://github.com/Lokathor/zstring"
+version = "0.2.0"
+edition = "2021"
+license = "Zlib OR Apache-2.0 OR MIT"
 
 [dependencies]
+ptr_iter = "0.1.0"
 
 [features]
-default = []
+default = ["alloc"]
 alloc = []
 
 [package.metadata.docs.rs]

@@ -1,126 +1,174 @@
-use core::{iter::Copied, marker::PhantomData, ptr::NonNull};
+use super::*;
+use core::{fmt::Write, marker::PhantomData, ptr::NonNull};
 
-use crate::{CharDecoder, ZBytesRef, ZBytesRefIter};
-
-/// Borrows a non-null **const** pointer to zero-termianted bytes.
+/// Borrowed and non-null pointer to zero-terminated utf-8 data.
 ///
-/// Like with a `str`, the bytes **must** be utf-8 encoded.
+/// Because this is a thin pointer it's suitable for direct FFI usage.
 ///
-/// Because this is a "thin" pointer it's suitable for direct use with FFI.
+/// ## Safety
+/// * This is `repr(transparent)` over a [`NonNull<u8>`].
+/// * The wrapped pointer points at a sequence of valid-to-read non-zero byte
+///   values followed by at least one zero byte.
+/// * When you create a `ZStr<'a>` value the pointer must be valid for at least
+///   as long as the lifetime `'a`.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct ZStr<'a> {
   pub(crate) nn: NonNull<u8>,
-  pub(crate) marker: PhantomData<&'a [u8]>,
-}
-impl<'a, 'b> PartialEq<ZStr<'b>> for ZStr<'a> {
-  #[inline]
-  #[must_use]
-  fn eq(&self, other: &ZStr<'b>) -> bool {
-    self.as_zbytes_ref() == other.as_zbytes_ref()
-  }
-}
-impl<'a> Eq for ZStr<'a> {}
-impl<'a> PartialEq<&str> for ZStr<'a> {
-  #[inline]
-  #[must_use]
-  fn eq(&self, other: &&str) -> bool {
-    self.as_zbytes_ref() == other.as_bytes()
-  }
-}
-impl<'a> PartialEq<ZStr<'a>> for &str {
-  #[inline]
-  #[must_use]
-  fn eq(&self, other: &ZStr<'a>) -> bool {
-    other.as_zbytes_ref() == self.as_bytes()
-  }
-}
-impl<'a> core::fmt::Debug for ZStr<'a> {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    let mut buffer = [0; 4_usize];
-    f.write_str("\"")?;
-    for ch in self.chars() {
-      f.write_str(ch.encode_utf8(&mut buffer))?;
-    }
-    f.write_str("\"")?;
-    Ok(())
-  }
-}
-impl<'a> core::fmt::Display for ZStr<'a> {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    let mut buffer = [0; 4_usize];
-    Ok(for ch in self.chars() {
-      f.write_str(ch.encode_utf8(&mut buffer))?;
-    })
-  }
-}
-impl<'a> core::fmt::Pointer for ZStr<'a> {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    f.write_str("ZStr(")?;
-    core::fmt::Pointer::fmt(&self.nn.as_ptr(), f)?;
-    f.write_str(")")?;
-    Ok(())
-  }
+  pub(crate) life: PhantomData<&'a [u8]>,
 }
 impl<'a> ZStr<'a> {
-  /// Turns a `NonNull` into a `ZStr`
+  /// Makes a `ZStr<'static>` from a `&'static str`
   ///
-  /// ## Safety
-  /// * The NonNull must point to a series of utf-8 encoded bytes that is
-  ///   null-terminated.
-  #[inline]
-  #[must_use]
-  pub const unsafe fn from_non_null_unchecked(nn: NonNull<u8>) -> Self {
-    Self { nn, marker: PhantomData }
-  }
-
-  /// Gets an iterator over the bytes.
+  /// This is *intended* for use with string litearls, but if you leak a runtime
+  /// string into a static string I guess that works too.
   ///
-  /// The iterator does **not** return the final null byte.
-  #[inline]
-  #[must_use]
-  pub const fn iter_bytes(&self) -> ZBytesRefIter<'a> {
-    ZBytesRefIter { nn: self.nn, marker: PhantomData }
-  }
-
-  /// Gets an iterator for the characters of the string data.
-  #[inline]
-  #[must_use]
-  pub fn chars(&self) -> CharDecoder<Copied<ZBytesRefIter<'a>>> {
-    CharDecoder::from(self.iter_bytes().copied())
-  }
-
-  /// Looks at the underlying data as bytes rather than as a str.
-  #[inline]
-  #[must_use]
-  pub const fn as_zbytes_ref(&self) -> ZBytesRef<'a> {
-    ZBytesRef { nn: self.nn, marker: PhantomData }
-  }
-
-  /// Gets the full str this points to, **including the null byte.**
+  /// ```rust
+  /// # use zstring::*;
+  /// const FOO: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// ```
   ///
-  /// **Caution:** This takes linear time to compute the slice length!
+  /// ## Panics
+  /// * If `try_from` would return an error, this will panic instead. Because
+  ///   this is intended for compile time constants, the panic will "just"
+  ///   trigger a build error.
   #[inline]
-  #[must_use]
-  pub fn as_str_including_null(&self) -> &'a str {
-    let mut count = 1;
-    let mut p = self.nn.as_ptr();
-    while unsafe { *p } != 0 {
-      count += 1;
-      p = unsafe { p.add(1) };
+  #[track_caller]
+  pub const fn from_lit(s: &'static str) -> ZStr<'static> {
+    let bytes = s.as_bytes();
+    let mut tail_index = bytes.len() - 1;
+    while bytes[tail_index] == 0 {
+      tail_index -= 1;
     }
-    unsafe {
-      core::str::from_utf8_unchecked(core::slice::from_raw_parts(
-        self.nn.as_ptr(),
-        count,
-      ))
+    assert!(tail_index < bytes.len() - 1, "No trailing nulls.");
+    let mut i = 0;
+    while i < tail_index {
+      if bytes[i] == 0 {
+        panic!("Input contains interior null.");
+      }
+      i += 1;
+    }
+    ZStr {
+      // Safety: References can't ever be null.
+      nn: unsafe { NonNull::new_unchecked(s.as_ptr() as *mut u8) },
+      life: PhantomData,
     }
   }
 
-  /// Gets the underlying pointer
+  /// An iterator over the bytes of this `ZStr`.
+  ///
+  /// * This iterator *excludes* the terminating 0 byte.
+  #[inline]
+  pub fn bytes(self) -> impl Iterator<Item = u8> + 'a {
+    // Safety: per the type safety docs, whoever made this `ZStr` promised that
+    // we can read the pointer's bytes until we find a 0 byte.
+    unsafe { ConstPtrIter::read_until_default(self.nn.as_ptr()) }
+  }
+
+  /// An iterator over the decoded `char` values of this `ZStr`.
+  #[inline]
+  pub fn chars(self) -> impl Iterator<Item = char> + 'a {
+    CharDecoder::from(self.bytes())
+  }
+
+  /// Gets the raw pointer to this data.
   #[inline]
   #[must_use]
-  pub const fn as_ptr(&self) -> *const u8 {
+  pub const fn as_ptr(self) -> *const u8 {
     self.nn.as_ptr()
   }
+}
+impl<'a> TryFrom<&'a str> for ZStr<'a> {
+  type Error = ZStringError;
+  /// Converts the value in place.
+  ///
+  /// The trailing nulls of the source `&str` will not "be in" the output
+  /// sequence of the returned `ZStr`.
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// let z1 = ZStr::try_from("abcd\0").unwrap();
+  /// assert!(z1.chars().eq("abcd".chars()));
+  ///
+  /// let z2 = ZStr::try_from("abcd\0\0\0").unwrap();
+  /// assert!(z2.chars().eq("abcd".chars()));
+  /// ```
+  ///
+  /// ## Failure
+  /// * There must be at least one trailing null in the input `&str`.
+  /// * There must be no nulls followed by a non-null ("interior nulls"). This
+  ///   second condition is not a strict requirement of the type, more of a
+  ///   correctness lint. If interior nulls were allowed then `"ab\0cd\0"`
+  ///   converted to a `ZStr` would only be read as `"ab"`, and the second half
+  ///   of the string would effectively be erased.
+  #[inline]
+  fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+    let trimmed = value.trim_end_matches('\0');
+    if value.len() == trimmed.len() {
+      Err(ZStringError::NoTrailingNulls)
+    } else if trimmed.contains('\0') {
+      Err(ZStringError::InteriorNulls)
+    } else {
+      // Note: We have verified that the starting `str` value contains at
+      // least one 0 byte.
+      Ok(Self {
+        nn: NonNull::new(value.as_ptr() as *mut u8).unwrap(),
+        life: PhantomData,
+      })
+    }
+  }
+}
+impl core::fmt::Display for ZStr<'_> {
+  /// Display formats the string (without outer `'"'`).
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// const FOO: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// let s = format!("{FOO}");
+  /// assert_eq!(s, "foo");
+  /// ```
+  #[inline]
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    for ch in self.chars() {
+      write!(f, "{ch}")?;
+    }
+    Ok(())
+  }
+}
+impl core::fmt::Debug for ZStr<'_> {
+  /// Debug formats with outer `"` around the string.
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// const FOO: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// let s = format!("{FOO:?}");
+  /// assert_eq!(s, "\"foo\"");
+  /// ```
+  #[inline]
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.write_char('"')?;
+    core::fmt::Display::fmt(self, f)?;
+    f.write_char('"')?;
+    Ok(())
+  }
+}
+impl core::fmt::Pointer for ZStr<'_> {
+  /// Formats the wrapped pointer value.
+  #[inline]
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    core::fmt::Pointer::fmt(&self.nn, f)
+  }
+}
+
+/// An error occurred while trying to make a [`ZStr`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ZStringError {
+  /// The provided str reference didn't have any trailing nulls (`'\0'`).
+  ///
+  /// When converting `&str` to `ZStr<'a>` in place, it's necessary that the
+  /// source string have at least one null on the end of the string. More than
+  /// one is allowed.
+  NoTrailingNulls,
+  ///
+  InteriorNulls,
 }
