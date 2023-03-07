@@ -144,7 +144,7 @@ impl TryFrom<&str> for ZString {
   }
 }
 impl core::fmt::Display for ZString {
-  /// Display formats the string (without outer `'"'`).
+  /// Display formats the string (without outer `"`).
   ///
   /// ```rust
   /// # use zstring::*;
