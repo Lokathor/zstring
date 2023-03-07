@@ -1,6 +1,6 @@
 use core::{marker::PhantomData, ptr::NonNull};
 
-use alloc::{boxed::Box, string::String};
+use alloc::{boxed::Box, string::String, vec::Vec};
 
 use crate::{ZStr, ZStringError};
 
@@ -31,8 +31,16 @@ impl Clone for ZString {
   #[inline]
   #[must_use]
   fn clone(&self) -> Self {
-    let b = self.chars().chain(['\0']).collect::<String>().into_boxed_str();
-    unsafe { Self::new_unchecked(b) }
+    let len = 1 + self.bytes().count();
+    let slice_ptr: &[u8] =
+      unsafe { core::slice::from_raw_parts(self.nn.as_ptr(), len) };
+    let vec = Vec::from(slice_ptr);
+    // Safety: we know this will be utf-8 data because you can only safely
+    // create a `ZString` from utf-8 sources (`&str` and `String`).
+    let string = unsafe { String::from_utf8_unchecked(vec) };
+    let boxed_str = string.into_boxed_str();
+    // Safety: This data is cloned from an existing `ZString`.
+    unsafe { Self::new_unchecked(boxed_str) }
   }
 }
 impl ZString {
