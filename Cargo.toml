@@ -10,7 +10,7 @@ license = "Zlib OR Apache-2.0 OR MIT"
 ptr_iter = "0.1.0"
 
 [features]
-default = ["alloc"]
+default = []
 alloc = []
 
 [package.metadata.docs.rs]
