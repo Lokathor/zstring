@@ -28,6 +28,15 @@ impl Drop for ZString {
   }
 }
 impl Clone for ZString {
+  /// Clones the value
+  ///
+  /// ```
+  /// # use zstring::*;
+  /// //
+  /// let zstring1 = ZString::try_from("abc").unwrap();
+  /// let zstring2 = zstring1.clone();
+  /// assert!(zstring1.chars().eq(zstring2.chars()));
+  /// ```
   #[inline]
   #[must_use]
   fn clone(&self) -> Self {
