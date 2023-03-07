@@ -37,11 +37,9 @@ jobs:
         rust-version: nightly
         components: miri
     - uses: actions/checkout@v3
-    # Note(Lokathor): We got some cached json errors once, and so we cargo clean for this run.
-    - run: rm -fr target
-    - run: cargo miri test --verbose --no-default-features
-    - run: cargo miri test --verbose --all-features
-    - run: cd derive && rm -fr target && cargo miri test --verbose --all-features
+    - run: |
+        cargo miri test --verbose
+        cargo miri test --verbose --all-features
 
   sanitizer-test:
     name: Test with -Zsanitizer=${{ matrix.sanitizer }}
