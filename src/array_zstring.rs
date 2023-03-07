@@ -97,9 +97,13 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   ///   ArrayZString::<16>::try_from("hel\0lo").unwrap_err();
   /// assert_eq!(interior_null_err, Some(ZStringError::InteriorNulls));
   ///
+  /// // strings equal to or greater than the array size won't fit.
   /// let capacity_err: Option<ZStringError> =
-  ///   ArrayZString::<2>::try_from("hello").unwrap_err();
+  ///   ArrayZString::<5>::try_from("hello").unwrap_err();
   /// assert_eq!(capacity_err, None);
+  ///
+  /// // if the array size exceeds the string size it will fit.
+  /// assert!(ArrayZString::<6>::try_from("hello").is_ok());
   /// ```
   #[inline]
   fn try_from(value: &str) -> Result<Self, Self::Error> {
