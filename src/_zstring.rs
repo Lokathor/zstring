@@ -77,6 +77,13 @@ impl ZString {
     ZStr { nn: self.nn, life: PhantomData }
   }
 
+  /// Gets the raw pointer to this data.
+  #[inline]
+  #[must_use]
+  pub const fn as_ptr(&self) -> *const u8 {
+    self.nn.as_ptr()
+  }
+
   /// An iterator over the bytes of this `ZStr`.
   ///
   /// * This iterator *excludes* the terminating 0 byte.
