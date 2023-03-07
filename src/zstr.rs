@@ -160,15 +160,11 @@ impl core::fmt::Pointer for ZStr<'_> {
   }
 }
 
-/// An error occurred while trying to make a [`ZStr`].
+/// An error occurred while trying to make a [`ZStr`] or [`ZString`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZStringError {
-  /// The provided str reference didn't have any trailing nulls (`'\0'`).
-  ///
-  /// When converting `&str` to `ZStr<'a>` in place, it's necessary that the
-  /// source string have at least one null on the end of the string. More than
-  /// one is allowed.
+  /// The provided data didn't have any trailing nulls (`'\0'`).
   NoTrailingNulls,
-  ///
+  /// The provided data had interior nulls (non-null data *after* a null).
   InteriorNulls,
 }
