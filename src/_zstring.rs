@@ -27,6 +27,14 @@ impl Drop for ZString {
     drop(unsafe { Box::from_raw(slice_ptr) })
   }
 }
+impl Clone for ZString {
+  #[inline]
+  #[must_use]
+  fn clone(&self) -> Self {
+    let b = self.chars().chain(['\0']).collect::<String>().into_boxed_str();
+    unsafe { Self::new_unchecked(b) }
+  }
+}
 impl ZString {
   /// Converts a [`Box<str>`] into a [`ZString`] without any additional
   /// checking.
