@@ -1,20 +1,67 @@
 name: Rust
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  push: {}
+  pull_request: {}
 
 env:
-  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
-  build:
+  test:
+    name: Test Rust ${{ matrix.rust }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - { rust: stable, os: ubuntu-latest }
+        - { rust: beta, os: ubuntu-latest }
+        - { rust: nightly, os: ubuntu-latest }
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+    - uses: actions/checkout@v3
+    - run: |
+        cargo test --verbose
+        cargo test --verbose --all-features
 
+  miri-test:
+    name: Test with miri
     runs-on: ubuntu-latest
+    env:
+      MIRIFLAGS: -Zmiri-tag-raw-pointers
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: nightly
+        components: miri
+    - uses: actions/checkout@v3
+    # Note(Lokathor): We got some cached json errors once, and so we cargo clean for this run.
+    - run: rm -fr target
+    - run: cargo miri test --verbose --no-default-features
+    - run: cargo miri test --verbose --all-features
+    - run: cd derive && rm -fr target && cargo miri test --verbose --all-features
 
+  sanitizer-test:
+    name: Test with -Zsanitizer=${{ matrix.sanitizer }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, memory, leak]
     steps:
     - uses: actions/checkout@v3
-    - name: Run tests (via miri)
-      run: cargo miri test --verbose
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: nightly
+        components: rust-src
+    - name: Test with sanitizer
+      env:
+        RUSTFLAGS: -Zsanitizer=${{ matrix.sanitizer }}
+        RUSTDOCFLAGS: -Zsanitizer=${{ matrix.sanitizer }}
+        ASAN_OPTIONS: detect_stack_use_after_return=1
+        RUST_BACKTRACE: 0
+      run: |
+        cargo test -Zbuild-std --verbose --target=x86_64-unknown-linux-gnu --no-default-features
+        cargo test -Zbuild-std --verbose --target=x86_64-unknown-linux-gnu --all-features
