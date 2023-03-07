@@ -9,7 +9,7 @@ use crate::{CharDecoder, ZStr, ZStringError};
 ///   null somewhere before the end of the array. Safe code cannot break this
 ///   rule, but unsafe code must be sure to use the entire array. The usable
 ///   capacity of the string is `N-1`.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct ArrayZString<const N: usize>([u8; N]);
 impl<const N: usize> ArrayZString<N> {
@@ -73,6 +73,12 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   type Error = Option<ZStringError>;
   /// Attempts to make an `ArrayZString` from a `&str`
   ///
+  /// ```
+  /// # use zstring::*;
+  /// let arr_str: ArrayZString<16> = ArrayZString::try_from("hello").unwrap();
+  /// assert_eq!(arr_str.as_str(), "hello");
+  /// ```
+  ///
   /// ## Failure
   /// The error type is unfortunately awkward here because 0.2 released with an
   /// exhaustive error type. So instead we get an "Option<ZStringError>", where
@@ -84,6 +90,13 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   /// * Any number of trailing nulls are allowed, and will be trimmed.
   /// * The trimmed byte length must be less than or equal to `N-1` (err:
   ///   `None`).
+  ///
+  /// ```
+  /// # use zstring::*;
+  /// let interior_null_err: Option<ZStringError> =
+  ///   ArrayZString::<16>::try_from("hel\0lo").unwrap_err();
+  /// assert_eq!(interior_null_err, Some(ZStringError::InteriorNulls));
+  /// ```
   #[inline]
   fn try_from(value: &str) -> Result<Self, Self::Error> {
     let trimmed = value.trim_end_matches('\0');
@@ -96,5 +109,33 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
     } else {
       Err(None)
     }
+  }
+}
+impl<const N: usize> core::fmt::Display for ArrayZString<N> {
+  /// Display formats the string (without outer `"`).
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// let arr_str: ArrayZString<16> = ArrayZString::try_from("foo").unwrap();
+  /// let s = format!("{arr_str}");
+  /// assert_eq!("foo", s);
+  /// ```
+  #[inline]
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    core::fmt::Display::fmt(&self.as_zstr(), f)
+  }
+}
+impl<const N: usize> core::fmt::Debug for ArrayZString<N> {
+  /// Debug formats with outer `"` around the string.
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// let arr_str: ArrayZString<16> = ArrayZString::try_from("foo").unwrap();
+  /// let s = format!("{arr_str:?}");
+  /// assert_eq!("\"foo\"", s);
+  /// ```
+  #[inline]
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    core::fmt::Debug::fmt(&self.as_zstr(), f)
   }
 }
