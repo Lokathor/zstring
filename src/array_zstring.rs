@@ -1,4 +1,4 @@
-use crate::{CharDecoder, ZStr};
+use crate::{CharDecoder, ZStr, ZStringError};
 
 /// An array of string data that's zero termianted.
 ///
@@ -67,5 +67,34 @@ impl<const N: usize> Default for ArrayZString<N> {
   #[must_use]
   fn default() -> Self {
     Self::const_default()
+  }
+}
+impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
+  type Error = Option<ZStringError>;
+  /// Attempts to make an `ArrayZString` from a `&str`
+  ///
+  /// ## Failure
+  /// The error type is unfortunately awkward here because 0.2 released with an
+  /// exhaustive error type. So instead we get an "Option<ZStringError>", where
+  /// "Some" is an actual [`ZStringError`] and "None" indicates that there was
+  /// no zstring related issue, just a lack of capacity.
+  ///
+  /// * Interior nulls are not allowed (err:
+  ///   `Some(ZStringError::InteriorNulls)`).
+  /// * Any number of trailing nulls are allowed, and will be trimmed.
+  /// * The trimmed byte length must be less than or equal to `N-1` (err:
+  ///   `None`).
+  #[inline]
+  fn try_from(value: &str) -> Result<Self, Self::Error> {
+    let trimmed = value.trim_end_matches('\0');
+    if trimmed.as_bytes().iter().copied().any(|b| b == 0) {
+      Err(Some(ZStringError::InteriorNulls))
+    } else if trimmed.len() <= (N - 1) {
+      let mut out = Self::const_default();
+      out.0[..trimmed.len()].copy_from_slice(trimmed.as_bytes());
+      Ok(out)
+    } else {
+      Err(None)
+    }
   }
 }
