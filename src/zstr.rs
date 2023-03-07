@@ -119,7 +119,7 @@ impl<'a> TryFrom<&'a str> for ZStr<'a> {
   }
 }
 impl core::fmt::Display for ZStr<'_> {
-  /// Display formats the string (without outer `'"'`).
+  /// Display formats the string (without outer `"`).
   ///
   /// ```rust
   /// # use zstring::*;
