@@ -1,6 +1,6 @@
 use crate::{CharDecoder, ZStr, ZStringError};
 
-/// An array of string data that's zero termianted.
+/// An array of string data that's zero terminated.
 ///
 /// This is a newtype over a byte array, with a const generic length `N`.
 ///
