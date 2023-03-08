@@ -81,8 +81,8 @@ impl<const N: usize> TryFrom<&str> for ArrayZString<N> {
   ///
   /// ## Failure
   /// The error type is unfortunately awkward here because 0.2 released with an
-  /// exhaustive error type. So instead we get an "Option<ZStringError>", where
-  /// "Some" is an actual [`ZStringError`] and "None" indicates that there was
+  /// exhaustive error type. So instead we get an `Option<ZStringError>`, where
+  /// `Some` is an actual [`ZStringError`] and `None` indicates that there was
   /// no zstring related issue, just a lack of capacity.
   ///
   /// * Any number of trailing nulls are allowed, and will be trimmed.
