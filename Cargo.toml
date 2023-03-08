@@ -9,6 +9,9 @@ license = "Zlib OR Apache-2.0 OR MIT"
 [dependencies]
 ptr_iter = "0.1.0"
 
+[dev-dependencies]
+bstr = "1"
+
 [features]
 default = []
 alloc = []
