@@ -193,6 +193,10 @@ impl core::fmt::Pointer for ZString {
 #[inline]
 #[must_use]
 pub fn zstrings_as_zstrs<'a>(zstrings: &'a [ZString]) -> &'a [ZStr<'a>] {
+  // Safety: The two types have identical layout.
+  // what differs is that one is borrowed and one
+  // is owned. However, behind a slice reference that
+  // doesn't have any significance.
   unsafe {
     core::slice::from_raw_parts(zstrings.as_ptr().cast(), zstrings.len())
   }
