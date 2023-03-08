@@ -183,10 +183,8 @@ impl core::fmt::Pointer for ZString {
 ///
 /// ```
 /// # use zstring::*;
-/// let zstrings = [
-///   ZString::try_from("hello").unwrap(),
-///   ZString::try_from("world").unwrap(),
-/// ];
+/// let zstrings =
+///   [ZString::try_from("hello").unwrap(), ZString::try_from("world").unwrap()];
 /// let s: &[ZStr<'_>] = zstrings_as_zstrs(&zstrings);
 /// let mut iter = s.iter();
 /// assert!("hello".chars().eq(iter.next().unwrap().chars()));
@@ -194,11 +192,8 @@ impl core::fmt::Pointer for ZString {
 /// ```
 #[inline]
 #[must_use]
-pub fn zstrings_as_zstrs<'a>( zstrings: &'a [ZString], 
-) -> &'a [ZStr<'a>] {
-  unsafe { core::slice::from_raw_parts( 
-      zstrings.as_ptr().cast(), zstrings.len()
-    )
+pub fn zstrings_as_zstrs<'a>(zstrings: &'a [ZString]) -> &'a [ZStr<'a>] {
+  unsafe {
+    core::slice::from_raw_parts(zstrings.as_ptr().cast(), zstrings.len())
   }
 }
-
