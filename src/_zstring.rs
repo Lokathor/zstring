@@ -4,9 +4,13 @@ use alloc::{boxed::Box, string::String, vec::Vec};
 
 use crate::{ZStr, ZStringError};
 
-/// Owning and non-null pointer to zero-terminated utf-8 data.
+/// Owning and non-null pointer to zero-terminated textual data.
 ///
 /// Because this is a thin pointer it's suitable for direct FFI usage.
+///
+/// The bytes pointed to *should* be utf-8 encoded, but the [`CharDecoder`] used
+/// to convert the bytes to `char` values is safe to use even when the bytes are
+/// not proper utf-8.
 ///
 /// ## Safety
 /// * This is `repr(transparent)` over a [`NonNull<u8>`].
@@ -176,5 +180,71 @@ impl core::fmt::Pointer for ZString {
   #[inline]
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     core::fmt::Pointer::fmt(&self.as_zstr(), f)
+  }
+}
+
+impl PartialEq<ZString> for ZString {
+  /// Two `ZString` are considered equal if they point at the exact same *byte
+  /// sequence*.
+  ///
+  /// This is much faster to compute when the bytes are valid UTF-8, though it
+  /// is stricter if the bytes are not valid UTF-8 (the character replacement
+  /// process during decoding *could* make two different byte sequences have the
+  /// same character sequence).
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZString) -> bool {
+    self.as_zstr().eq(&other.as_zstr())
+  }
+}
+impl PartialOrd<ZString> for ZString {
+  /// Compares based on the *byte sequence* pointed to.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &ZString) -> Option<core::cmp::Ordering> {
+    self.as_zstr().partial_cmp(&other.as_zstr())
+  }
+}
+
+impl PartialEq<&str> for ZString {
+  /// A `ZStr` equals a `&str` if the bytes match.
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &&str) -> bool {
+    self.bytes().eq(other.as_bytes().iter().copied())
+  }
+}
+impl PartialOrd<&str> for ZString {
+  /// Compares based on the *byte sequence* pointed to.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &&str) -> Option<core::cmp::Ordering> {
+    Some(self.bytes().cmp(other.as_bytes().iter().copied()))
+  }
+}
+
+impl PartialEq<ZStr<'_>> for ZString {
+  /// A `ZString` equals a `ZStr` by calling `ZString::as_zstr`
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZStr<'_>) -> bool {
+    self.as_zstr().eq(other)
+  }
+}
+impl PartialOrd<ZStr<'_>> for ZString {
+  /// Compares based on the *byte sequence* pointed to.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &ZStr<'_>) -> Option<core::cmp::Ordering> {
+    self.as_zstr().partial_cmp(other)
+  }
+}
+
+impl core::hash::Hash for ZString {
+  #[inline]
+  fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    for b in self.bytes() {
+      state.write_u8(b)
+    }
   }
 }
