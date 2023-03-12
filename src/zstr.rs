@@ -1,9 +1,13 @@
 use super::*;
-use core::{fmt::Write, marker::PhantomData, ptr::NonNull};
+use core::{cmp::Ordering, fmt::Write, marker::PhantomData, ptr::NonNull};
 
-/// Borrowed and non-null pointer to zero-terminated utf-8 data.
+/// Borrowed and non-null pointer to zero-terminated text data.
 ///
 /// Because this is a thin pointer it's suitable for direct FFI usage.
+///
+/// The bytes pointed to *should* be utf-8 encoded, but the [`CharDecoder`] used
+/// to convert the bytes to `char` values is safe to use even when the bytes are
+/// not proper utf-8.
 ///
 /// ## Safety
 /// * This is `repr(transparent)` over a [`NonNull<u8>`].
@@ -57,7 +61,7 @@ impl<'a> ZStr<'a> {
 
   /// An iterator over the bytes of this `ZStr`.
   ///
-  /// * This iterator *excludes* the terminating 0 byte.
+  /// * This iterator **excludes** the terminating 0 byte.
   #[inline]
   pub fn bytes(self) -> impl Iterator<Item = u8> + 'a {
     // Safety: per the type safety docs, whoever made this `ZStr` promised that
@@ -157,6 +161,100 @@ impl core::fmt::Pointer for ZStr<'_> {
   #[inline]
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     core::fmt::Pointer::fmt(&self.nn, f)
+  }
+}
+
+impl PartialEq<ZStr<'_>> for ZStr<'_> {
+  /// Two `ZStr` are considered equal if they point at the exact same *byte
+  /// sequence*.
+  ///
+  /// This is much faster to compute when the bytes are valid UTF-8, though it
+  /// is stricter if the bytes are not valid UTF-8 (the character replacement
+  /// process during decoding *could* make two different byte sequences have the
+  /// same character sequence).
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// const FOO1: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// const FOO2: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// assert_eq!(FOO1, FOO2);
+  /// ```
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZStr<'_>) -> bool {
+    if self.nn == other.nn {
+      true
+    } else {
+      self.bytes().eq(other.bytes())
+    }
+  }
+}
+impl PartialOrd<ZStr<'_>> for ZStr<'_> {
+  /// Compares based on the *byte sequence* pointed to.
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// # use core::cmp::{PartialOrd, Ordering};
+  /// const ABC: ZStr<'static> = ZStr::from_lit("abc\0");
+  /// const DEF: ZStr<'static> = ZStr::from_lit("def\0");
+  /// const GHI: ZStr<'static> = ZStr::from_lit("ghi\0");
+  /// assert_eq!(ABC.partial_cmp(&DEF), Some(Ordering::Less));
+  /// assert_eq!(DEF.partial_cmp(&GHI), Some(Ordering::Less));
+  /// assert_eq!(GHI.partial_cmp(&ABC), Some(Ordering::Greater));
+  /// ```
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &ZStr<'_>) -> Option<core::cmp::Ordering> {
+    if self.nn == other.nn {
+      Some(Ordering::Equal)
+    } else {
+      Some(self.bytes().cmp(other.bytes()))
+    }
+  }
+}
+
+impl PartialEq<&str> for ZStr<'_> {
+  /// A `ZStr` equals a `&str` if the bytes match.
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &&str) -> bool {
+    self.bytes().eq(other.as_bytes().iter().copied())
+  }
+}
+impl PartialOrd<&str> for ZStr<'_> {
+  /// Compares based on the *byte sequence* pointed to.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &&str) -> Option<core::cmp::Ordering> {
+    Some(self.bytes().cmp(other.as_bytes().iter().copied()))
+  }
+}
+
+#[cfg(feature = "alloc")]
+impl PartialEq<ZString> for ZStr<'_> {
+  /// A `ZStr` equals a `ZString` by calling `ZString::as_zstr`
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZString) -> bool {
+    self.eq(&other.as_zstr())
+  }
+}
+#[cfg(feature = "alloc")]
+impl PartialOrd<ZString> for ZStr<'_> {
+  /// Compares based on the *byte sequence* pointed to.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &ZString) -> Option<core::cmp::Ordering> {
+    self.partial_cmp(&other.as_zstr())
+  }
+}
+
+impl core::hash::Hash for ZStr<'_> {
+  #[inline]
+  fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    for b in self.bytes() {
+      state.write_u8(b)
+    }
   }
 }
 
