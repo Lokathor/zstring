@@ -199,6 +199,15 @@ impl<const N: usize, const X: usize> PartialOrd<ArrayZString<X>>
   }
 }
 
+impl<const N: usize> Eq for ArrayZString<N> {}
+impl<const N: usize> Ord for ArrayZString<N> {
+  #[inline]
+  #[must_use]
+  fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+    self.partial_cmp(other).unwrap()
+  }
+}
+
 impl<const N: usize> PartialEq<ZStr<'_>> for ArrayZString<N> {
   /// An `ArrayZString<N>` equals a `ZStr` by bytes.
   #[inline]
