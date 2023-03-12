@@ -248,3 +248,26 @@ impl core::hash::Hash for ZString {
     }
   }
 }
+
+/// Re-view a slice of [ZString] as a slice of [ZStr]
+///
+/// ```
+/// # use zstring::*;
+/// let zstrings =
+///   [ZString::try_from("hello").unwrap(), ZString::try_from("world").unwrap()];
+/// let s: &[ZStr<'_>] = zstrings_as_zstrs(&zstrings);
+/// let mut iter = s.iter();
+/// assert!("hello".chars().eq(iter.next().unwrap().chars()));
+/// assert!("world".chars().eq(iter.next().unwrap().chars()));
+/// ```
+#[inline]
+#[must_use]
+pub fn zstrings_as_zstrs<'a>(zstrings: &'a [ZString]) -> &'a [ZStr<'a>] {
+  // Safety: The two types have identical layout.
+  // what differs is that one is borrowed and one
+  // is owned. However, behind a slice reference that
+  // doesn't have any significance.
+  unsafe {
+    core::slice::from_raw_parts(zstrings.as_ptr().cast(), zstrings.len())
+  }
+}
