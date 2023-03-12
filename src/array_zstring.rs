@@ -1,15 +1,20 @@
 use crate::{CharDecoder, ZStr, ZStringError};
 
-/// An array of string data that's zero termianted.
+/// An array holding textual data that's zero termianted.
 ///
 /// This is a newtype over a byte array, with a const generic length `N`.
+///
+/// The bytes contained *should* be utf-8 encoded, but the [`CharDecoder`] used
+/// to convert the bytes to `char` values is safe to use even when the bytes are
+/// not proper utf-8.
 ///
 /// ## Safety
 /// * The [`as_zstr`](ArrayZString<N>::as_zstr) method assumes that there's a
 ///   null somewhere before the end of the array. Safe code cannot break this
-///   rule, but unsafe code must be sure to use the entire array. The usable
-///   capacity of the string is `N-1`.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+///   rule, but unsafe code must be sure to maintain this invaraint. The array
+///   has size `N`, but only `N-1` of the bytes are usable, because there has to
+///   be at least one `'\0'` before the end of the array.
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct ArrayZString<const N: usize>([u8; N]);
 impl<const N: usize> ArrayZString<N> {
@@ -33,9 +38,14 @@ impl<const N: usize> ArrayZString<N> {
     unsafe { core::mem::transmute::<*const u8, ZStr<'_>>(self.0.as_ptr()) }
   }
 
-  /// View the data as a rust str reference.
+  /// View the data as a rust `&str`.
+  ///
+  /// ## Panics
+  /// * If somehow the bytes in the array aren't utf-8 this will panic. Safe
+  ///   code cannot cause this to happen.
   #[inline]
   #[must_use]
+  #[track_caller]
   pub fn as_str(&self) -> &str {
     let null_position = self.0.iter().position(|&b| b == 0).unwrap();
     core::str::from_utf8(&self.0[..null_position]).unwrap()
@@ -145,5 +155,91 @@ impl<const N: usize> core::fmt::Debug for ArrayZString<N> {
   #[inline]
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     core::fmt::Debug::fmt(&self.as_zstr(), f)
+  }
+}
+
+impl<const N: usize, const X: usize> PartialEq<ArrayZString<X>>
+  for ArrayZString<N>
+{
+  /// Two `ArrayZString` are equal when the bytes "in" their strings are the
+  /// same, regardless of capacity differences.
+  ///
+  /// ```
+  /// # use zstring::*;
+  /// assert_eq!(
+  ///   ArrayZString::<6>::try_from("hello").unwrap(),
+  ///   ArrayZString::<10>::try_from("hello").unwrap(),
+  /// );
+  /// ```
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ArrayZString<X>) -> bool {
+    self.bytes().eq(other.bytes())
+  }
+}
+impl<const N: usize, const X: usize> PartialOrd<ArrayZString<X>>
+  for ArrayZString<N>
+{
+  /// Two `ArrayZString` are compared by the bytes "in" their strings,
+  /// regardless of capacity differences.
+  ///
+  /// ```
+  /// # use zstring::*;
+  /// # use core::cmp::{PartialOrd, Ordering};
+  /// let abc = ArrayZString::<6>::try_from("abc").unwrap();
+  /// let def = ArrayZString::<10>::try_from("def").unwrap();
+  /// assert_eq!(abc.partial_cmp(&def), Some(Ordering::Less));
+  /// ```
+  #[inline]
+  #[must_use]
+  fn partial_cmp(
+    &self, other: &ArrayZString<X>,
+  ) -> Option<core::cmp::Ordering> {
+    Some(self.bytes().cmp(other.bytes()))
+  }
+}
+
+impl<const N: usize> PartialEq<ZStr<'_>> for ArrayZString<N> {
+  /// An `ArrayZString<N>` equals a `ZStr` by bytes.
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &ZStr<'_>) -> bool {
+    self.bytes().eq(other.bytes())
+  }
+}
+impl<const N: usize> PartialOrd<ZStr<'_>> for ArrayZString<N> {
+  /// An `ArrayZString<N>` compares to a `ZStr` by bytes.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &ZStr<'_>) -> Option<core::cmp::Ordering> {
+    Some(self.bytes().cmp(other.bytes()))
+  }
+}
+
+#[cfg(feature = "alloc")]
+impl<const N: usize> PartialEq<crate::ZString> for ArrayZString<N> {
+  /// An `ArrayZString<N>` equals a `ZString` when they contain the same bytes.
+  #[inline]
+  #[must_use]
+  fn eq(&self, other: &crate::ZString) -> bool {
+    self.eq(&other.as_zstr())
+  }
+}
+#[cfg(feature = "alloc")]
+impl<const N: usize> PartialOrd<crate::ZString> for ArrayZString<N> {
+  /// An `ArrayZString<N>` compares to a `ZString` by bytes.
+  #[inline]
+  #[must_use]
+  fn partial_cmp(&self, other: &crate::ZString) -> Option<core::cmp::Ordering> {
+    self.partial_cmp(&other.as_zstr())
+  }
+}
+
+impl<const N: usize> core::hash::Hash for ArrayZString<N> {
+  #[inline]
+  fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    for b in self.bytes() {
+      state.write_u8(b)
+    }
   }
 }
