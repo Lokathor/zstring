@@ -2,7 +2,7 @@
 name = "zstring"
 description = "Zero-termianted string lib, for use with C FFI."
 repository = "https://github.com/Lokathor/zstring"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "Zlib OR Apache-2.0 OR MIT"
 
