@@ -18,5 +18,7 @@ fn fuzz_found_data() {
   assert_eq!(s_lossy, s_bstr); // passes, they agree
 
   let s_decoded = CharDecoder::from(bytes.iter().copied()).collect::<String>();
-  assert_eq!(s_lossy, s_decoded); // fails, we eat too much per replacement.
+  assert_eq!(s_lossy, s_decoded);
+
+  // Note: Other byte sequences will still fail!
 }
