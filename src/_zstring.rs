@@ -1,4 +1,4 @@
-use core::{marker::PhantomData, ptr::NonNull};
+use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
 
 use alloc::{boxed::Box, string::String, vec::Vec};
 
@@ -100,6 +100,16 @@ impl ZString {
   #[inline]
   pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
     self.as_zstr().chars()
+  }
+}
+impl From<ZStr<'_>> for ZString {
+  #[inline]
+  #[must_use]
+  fn from(value: ZStr<'_>) -> Self {
+    let other: ManuallyDrop<ZString> =
+      ManuallyDrop::new(ZString { nn: value.nn });
+    let other_ref: &ZString = &other;
+    other_ref.clone()
   }
 }
 impl FromIterator<char> for ZString {
