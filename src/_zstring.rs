@@ -103,6 +103,14 @@ impl ZString {
   }
 }
 impl From<ZStr<'_>> for ZString {
+  /// This is like a "to owned' style operation.
+  ///
+  /// ```rust
+  /// # use zstring::*;
+  /// const FOO: ZStr<'static> = ZStr::from_lit("foo\0");
+  /// let zstring = ZString::from(FOO);
+  /// assert_eq!(zstring, FOO);
+  /// ```
   #[inline]
   #[must_use]
   fn from(value: ZStr<'_>) -> Self {
